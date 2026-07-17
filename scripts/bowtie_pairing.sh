@@ -88,13 +88,16 @@ do
     R1=$r
     R2=$(echo $r | get_R2)
     sample_dir=$(get_sample_dir $r)
+    prefix_out=$(echo $(basename $R1) | get_pairs)
 
     ## Logs
     ldir=${LOGS_DIR}/${sample_dir}
     mkdir -p ${ldir}
-    echo "Logs: ${ldir}/mergeSAM.log"
-    merge_pairs $sample_dir $R1 $R2 &> ${ldir}/mergeSAM.log
+    echo "Logs: ${ldir}/mergeSAM_${prefix_out}.log"
+    merge_pairs $sample_dir $R1 $R2 &> ${ldir}/mergeSAM_${prefix_out}.log &
 done
+wait
+
 
 ## Add allele specific tag if specified
 if [[ ${ALLELE_SPECIFIC_SNP} != "" ]]; then

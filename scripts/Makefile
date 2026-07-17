@@ -116,11 +116,15 @@ bowtie_combine:  config_check
 	@echo
 
 ## Compute mapping statistics
+## Run in the background: the full-BAM counts are slow and are only consumed
+## by merge_allstat (merge_persample), which runs many hours later. Do not
+## block proc_hic on this step.
 mapping_stat:  config_check
 	@echo "--------------------------------------------" 
 	@date 
-	@echo "Mapping statistics for R1 and R2 tags ..." 
-	@$(SCRIPTS)/mapping_stat.sh -c $(CONFIG_FILE)
+	@echo "Mapping statistics for R1 and R2 tags (background) ..." 
+	@mkdir -p $(LOGS_DIR)
+	@nohup $(SCRIPTS)/mapping_stat.sh -c $(CONFIG_FILE) > $(LOGS_DIR)/mapping_stat.nohup.log 2>&1 &
 	@echo
 
 mapping_clean: config_check

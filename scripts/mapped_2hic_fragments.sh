@@ -49,43 +49,48 @@ if [[ ! -z ${ALLELE_SPECIFIC_SNP} ]]; then opts=$opts" -g XA"; fi
 #for r in $(get_files_for_overlap)
 for r in $(get_paired_bam)
 do
-    sample_dir=$(get_sample_dir ${r})
-    datadir=${MAPC_OUTPUT}/data/${sample_dir}
-    mkdir -p ${datadir}
-    
-    ## Logs
-    ldir=${LOGS_DIR}/${sample_dir}
-    mkdir -p ${ldir}
-    
-    if [[ $mode == "DNAse" ]]; then
-	logfile=${ldir}/mapped_2hic_dnase.log
-        rust_bin=${HICPRO_MICROC_RUST_BIN:-${SCRIPTS}/hicpro-microc-rs}
-        if [[ ${USE_RUST:-1} == 1 && -x ${rust_bin} ]]; then
-            breakpoints=${HICPRO_BREAKPOINTS:-${SCRIPTS}/../annotations/GRCh38_noalt_decoy_as.breakpoints.high_confidence.tsv}
-            rust_opts="--threads ${N_CPU:-1} --breakpoints ${breakpoints}"
-            if [[ ${RUST_SHARD_VALIDPAIRS:-0} == 1 ]]; then
-                rust_opts="${rust_opts} --shard-dir ${datadir}/shards"
+    (
+        sample_dir=$(get_sample_dir ${r})
+        datadir=${MAPC_OUTPUT}/data/${sample_dir}
+        mkdir -p ${datadir}
+        
+        ## Logs
+        ldir=${LOGS_DIR}/${sample_dir}
+        mkdir -p ${ldir}
+        prefix=$(basename ${r} .bam)
+        
+        if [[ $mode == "DNAse" ]]; then
+            logfile=${ldir}/mapped_2hic_dnase_${prefix}.log
+            rust_bin=${HICPRO_MICROC_RUST_BIN:-${SCRIPTS}/hicpro-microc-rs}
+            if [[ ${USE_RUST:-1} == 1 && -x ${rust_bin} ]]; then
+                breakpoints=${HICPRO_BREAKPOINTS:-${SCRIPTS}/../annotations/GRCh38_noalt_decoy_as.breakpoints.high_confidence.tsv}
+                rust_opts="--threads ${N_CPU:-1} --breakpoints ${breakpoints}"
+                if [[ ${RUST_SHARD_VALIDPAIRS:-0} == 1 ]]; then
+                    rust_opts="${rust_opts} --shard-dir ${datadir}/shards"
+                fi
+                cmd="${rust_bin} ${opts} ${rust_opts} -r ${r} -o ${datadir}"
+            else
+                cmd="${PYTHON_PATH}/python ${SCRIPTS}/mapped_2hic_dnase.py ${opts} -r ${r} -o ${datadir}"
             fi
-            cmd="${rust_bin} ${opts} ${rust_opts} -r ${r} -o ${datadir}"
+            echo "Logs: ${logfile}"
+            exec_cmd $cmd > ${logfile} 2>&1
         else
-            cmd="${PYTHON_PATH}/python ${SCRIPTS}/mapped_2hic_dnase.py ${opts} -r ${r} -o ${datadir}"
+            logfile=${ldir}/mapped_2hic_fragments_${prefix}.log
+            cmd="${PYTHON_PATH}/python ${SCRIPTS}/mapped_2hic_fragments.py ${opts} -f ${GENOME_FRAGMENT_FILE} -r ${r} -o ${datadir}"
+            echo "Logs: ${logfile}"
+            exec_cmd $cmd > ${logfile} 2>&1
         fi
-	echo "Logs: ${logfile}"
-	exec_cmd $cmd > ${logfile} 2>&1
-    else
-	logfile=${ldir}/mapped_2hic_fragments.log
-       	cmd="${PYTHON_PATH}/python ${SCRIPTS}/mapped_2hic_fragments.py ${opts} -f ${GENOME_FRAGMENT_FILE} -r ${r} -o ${datadir}"
-	echo "Logs: ${logfile}"
-	exec_cmd $cmd > ${logfile} 2>&1
-    fi
-    
-    ## Valid pairs are already sorted
-    outVALID=`basename ${r} | sed -e 's/.bam$/.validPairs/'`
-     
-    echo "## Sorting valid interaction file ..." >> ${logfile}
-    cmd="LANG=en; sort --parallel=${N_CPU:-1} -S ${SORT_RAM:-1G} -T ${TMP_DIR} -k2,2V -k3,3n -k5,5V -k6,6n -o ${datadir}/${outVALID} ${datadir}/${outVALID}"
-    exec_cmd $cmd >> ${logfile} 2>&1
+        
+        ## Valid pairs are already sorted
+        outVALID=`basename ${r} | sed -e 's/.bam$/.validPairs/'`
+         
+        echo "## Sorting valid interaction file ..." >> ${logfile}
+        cmd="LANG=en; sort --parallel=${N_CPU:-1} -S ${SORT_RAM:-1G} -T ${TMP_DIR} -k2,2V -k3,3n -k5,5V -k6,6n -o ${datadir}/${outVALID} ${datadir}/${outVALID}"
+        exec_cmd $cmd >> ${logfile} 2>&1
+    ) &
 done
+wait
+
 
 
 
