@@ -1,0 +1,25 @@
+name: hicpro-rust
+channels:
+  - conda-forge
+  - bioconda
+dependencies:
+  - rust
+  - clang
+  - libclang
+  - clangdev
+  - pkg-config
+  - make
+  - gcc_linux-64
+  - gxx_linux-64
+  - zlib
+  - bzip2
+  - xz
+  - libcurl
+  - openssl
+  - python=3.10
+  - pysam
+  - bx-python
+  - cooler
+  - samtools
+  - bowtie2
+  - coreutils

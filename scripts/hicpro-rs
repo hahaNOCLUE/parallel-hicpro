@@ -1,0 +1,14 @@
+#!/bin/bash
+
+set -e
+
+script_dir=$(cd "$(dirname "$0")" && pwd)
+binary="$script_dir/../rust/hicpro-rs/target/release/hicpro-rs"
+
+if [ ! -x "$binary" ]; then
+    echo "hicpro-rs is not built. Run:" >&2
+    echo "  mamba run -n hicpro-rust cargo build --release --manifest-path $script_dir/../rust/hicpro-rs/Cargo.toml" >&2
+    exit 127
+fi
+
+exec "$binary" "$@"

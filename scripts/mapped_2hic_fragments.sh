@@ -59,7 +59,17 @@ do
     
     if [[ $mode == "DNAse" ]]; then
 	logfile=${ldir}/mapped_2hic_dnase.log
-	cmd="${PYTHON_PATH}/python ${SCRIPTS}/mapped_2hic_dnase.py ${opts} -r ${r} -o ${datadir}"
+        rust_bin=${HICPRO_MICROC_RUST_BIN:-${SCRIPTS}/hicpro-microc-rs}
+        if [[ ${USE_RUST:-1} == 1 && -x ${rust_bin} ]]; then
+            breakpoints=${HICPRO_BREAKPOINTS:-${SCRIPTS}/../annotations/GRCh38_noalt_decoy_as.breakpoints.high_confidence.tsv}
+            rust_opts="--threads ${N_CPU:-1} --breakpoints ${breakpoints}"
+            if [[ ${RUST_SHARD_VALIDPAIRS:-0} == 1 ]]; then
+                rust_opts="${rust_opts} --shard-dir ${datadir}/shards"
+            fi
+            cmd="${rust_bin} ${opts} ${rust_opts} -r ${r} -o ${datadir}"
+        else
+            cmd="${PYTHON_PATH}/python ${SCRIPTS}/mapped_2hic_dnase.py ${opts} -r ${r} -o ${datadir}"
+        fi
 	echo "Logs: ${logfile}"
 	exec_cmd $cmd > ${logfile} 2>&1
     else
@@ -73,7 +83,7 @@ do
     outVALID=`basename ${r} | sed -e 's/.bam$/.validPairs/'`
      
     echo "## Sorting valid interaction file ..." >> ${logfile}
-    cmd="LANG=en; sort -T ${TMP_DIR} -k2,2V -k3,3n -k5,5V -k6,6n -o ${datadir}/${outVALID} ${datadir}/${outVALID}"
+    cmd="LANG=en; sort --parallel=${N_CPU:-1} -S ${SORT_RAM:-1G} -T ${TMP_DIR} -k2,2V -k3,3n -k5,5V -k6,6n -o ${datadir}/${outVALID} ${datadir}/${outVALID}"
     exec_cmd $cmd >> ${logfile} 2>&1
 done
 

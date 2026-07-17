@@ -11,7 +11,7 @@ slash := |
 tick := -
 undsc := _
 
-all : init mapping proc_hic merge_persample hic_qc build_raw_maps ice_norm
+all : init mapping proc_hic merge_persample hic_qc build_balanced_mcool
 
 ## paralell
 all_sub : init mapping proc_hic
@@ -23,13 +23,13 @@ mapping: bowtie_global bowtie_local bowtie_combine mapping_stat
 proc_hic : bowtie_pairing mapped_2hic_fragments 
 
 ## per sample - no parallelisation
-all_persample : merge_persample build_raw_maps hic_qc ice_norm
+all_persample : merge_persample hic_qc build_balanced_mcool
 
 merge_persample: merge_valid_interactions merge_allstat
 
 quality_checks : hic_qc
 
-build_contact_maps: build_raw_maps
+build_contact_maps: build_balanced_mcool
 
 
 ######################################
@@ -158,6 +158,13 @@ merge_valid_interactions:  config_check
 	@date 
 	@echo "Merge chunks from the same sample ..." 
 	@$(SCRIPTS)/merge_valid_interactions.sh -c $(CONFIG_FILE)
+	@echo
+
+build_balanced_mcool: merge_valid_interactions
+	@echo "--------------------------------------------"
+	@date
+	@echo "Build and balance multi-resolution Cooler files ..."
+	@$(SCRIPTS)/build_balanced_mcool.sh -c $(CONFIG_FILE)
 	@echo
 
 merge_allstat: config_check

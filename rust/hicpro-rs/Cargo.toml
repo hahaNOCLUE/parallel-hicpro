@@ -1,0 +1,16 @@
+[package]
+name = "hicpro-rs"
+version = "0.1.0"
+edition = "2021"
+license = "BSD-3-Clause"
+description = "Parallel Rust replacements for HiC-Pro pairing and interaction classification"
+
+[dependencies]
+anyhow = "1.0"
+clap = { version = "4.5", features = ["derive"] }
+rayon = "1.10"
+rust-htslib = { version = "1.0", default-features = false }
+
+[profile.release]
+lto = "thin"
+codegen-units = 1

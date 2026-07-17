@@ -54,8 +54,12 @@ merge_pairs()
 	OPTS=$OPTS" -m"
     fi
 
-    #cmd="${PYTHON_PATH}/python ${SCRIPTS}/mergeSAM.py ${OPTS} -f ${BOWTIE2_FINAL_OUTPUT_DIR}/${prefix_r1}.bwt2merged.bam -r ${BOWTIE2_FINAL_OUTPUT_DIR}/${prefix_r2}.bwt2merged.bam -o ${BOWTIE2_FINAL_OUTPUT_DIR}/${prefix_out}.bwt2pairs.bam > ${ldir}/mergeSAM.log"
-    cmd="${PYTHON_PATH}/python ${SCRIPTS}/mergeSAM.py ${OPTS} -f ${file_r1} -r ${file_r2} -o ${BOWTIE2_FINAL_OUTPUT_DIR}/${prefix_out}.bwt2pairs.bam"
+    rust_bin=${HICPRO_RUST_BIN:-${SCRIPTS}/hicpro-rs}
+    if [[ ${USE_RUST:-1} == 1 && -x ${rust_bin} ]]; then
+        cmd="${rust_bin} pair ${OPTS} --threads ${N_CPU:-1} -f ${file_r1} -r ${file_r2} -o ${BOWTIE2_FINAL_OUTPUT_DIR}/${prefix_out}.bwt2pairs.bam"
+    else
+        cmd="${PYTHON_PATH}/python ${SCRIPTS}/mergeSAM.py ${OPTS} -f ${file_r1} -r ${file_r2} -o ${BOWTIE2_FINAL_OUTPUT_DIR}/${prefix_out}.bwt2pairs.bam"
+    fi
     exec_cmd $cmd 
 }
 

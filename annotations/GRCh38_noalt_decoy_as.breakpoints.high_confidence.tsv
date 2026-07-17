@@ -1,0 +1,15 @@
+# Reference-specific table for GCA_000001405.15_GRCh38_no_alt_plus_hs38d1_analysis_set.fna.
+# Do not reuse with another FASTA or GRCh38 representation.
+# chromosome	breakpoint_0based	n_run_start	n_run_end	n_run_length
+# Only chromosomes whose centromeric N run is >=1 kb are split.
+# Reads with 5' coordinate < breakpoint go left; all others go right. No interval is excluded.
+chr3	91271187	91265381	91276994	11613
+chr5	48450276	47309084	49591469	2282385
+chr7	60853234	60828234	60878234	50000
+chr12	34825763	34822289	34829237	6948
+chr14	17288935	16404348	18173523	1769175
+chr18	20568090	20564714	20571466	6752
+chr19	26049731	24908589	27190874	2282285
+chr20	28851699	28843401	28859997	16596
+chr21	11890184	10864560	12915808	2051248
+chr22	14004553	12954788	15054318	2099530

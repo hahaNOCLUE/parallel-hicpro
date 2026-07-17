@@ -1,0 +1,12 @@
+#######################################################################
+## Machine-specific HiC-Pro settings
+#######################################################################
+R_PATH = /path/to/bin
+BOWTIE2_PATH = /path/to/bin
+SAMTOOLS_PATH = /path/to/mamba/envs/hicpro-rust/bin
+PYTHON_PATH = /path/to/mamba/envs/hicpro-rust/bin
+INSTALL_PATH = /path/to/parallel-hicpro
+SCRIPTS = /path/to/parallel-hicpro/scripts
+SOURCES = /path/to/parallel-hicpro/scripts/src
+ANNOT_DIR = /path/to/parallel-hicpro/annotation
+CLUSTER_SCRIPT = /path/to/parallel-hicpro/scripts/make_slurm_script.sh
