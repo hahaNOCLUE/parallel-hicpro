@@ -423,8 +423,8 @@ fn run_pair(args: PairArgs) -> Result<()> {
         .with_context(|| format!("cannot create {}", args.output.display()))?;
     writer.set_threads(bgzf_threads)?;
 
-    let mut it1 = r1_reader.records();
-    let mut it2 = r2_reader.records();
+    let mut it1 = r1_reader.records().fuse();
+    let mut it2 = r2_reader.records().fuse();
     let mut stats = PairStats::default();
 
     loop {

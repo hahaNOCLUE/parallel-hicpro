@@ -129,7 +129,7 @@ fn run(args: Args) -> Result<()> {
     let base = base_name(&args.mapped_reads)?;
     let mut outputs = open_outputs(&args.output_dir, &base, args.all_outputs)?;
     let mut shards: HashMap<String, BufWriter<File>> = HashMap::new();
-    let mut records = reader.records();
+    let mut records = reader.records().fuse();
     let mut stats = Stats::default();
     let mut processed = 0_u64;
 
