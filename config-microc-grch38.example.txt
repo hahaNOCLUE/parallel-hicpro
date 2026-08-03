@@ -1,7 +1,7 @@
-# Primary target: Micro-C aligned to the GRCh38 no-alt plus hs38d1 decoy analysis set.
-# Expected FASTA: GCA_000001405.15_GRCh38_no_alt_plus_hs38d1_analysis_set.fna
-# Expected Bowtie2 prefix: GRCh38_noalt_decoy_as
-# GENOME_FRAGMENT must remain empty.
+# Primary target: Hi-C aligned to the GRCh38 no-alt analysis set.
+# Expected FASTA: GCA_000001405.15_GRCh38_no_alt_analysis_set.fna
+# Expected Bowtie2 prefix: GRCh38_noalt_as
+# Digestion: MboI (GATC)
 
 TMP_DIR = tmp
 LOGS_DIR = logs
@@ -19,16 +19,16 @@ FORMAT = phred33
 MIN_MAPQ = 0
 
 BOWTIE2_IDX_PATH = /path/to/bowtie2/index/directory
-REFERENCE_GENOME = GRCh38_noalt_decoy_as
+REFERENCE_GENOME = GRCh38_noalt_as
 BOWTIE2_GLOBAL_OPTIONS = --very-sensitive-local --reorder
 BOWTIE2_LOCAL_OPTIONS =
-GENOME_SIZE = /path/to/main.chrom.sizes
+GENOME_SIZE = /path/to/GRCh38_noalt_as/main.chroms.sizes
 
 ALLELE_SPECIFIC_SNP =
 CAPTURE_TARGET =
 REPORT_CAPTURE_REPORTER =
-GENOME_FRAGMENT =
-LIGATION_SITE =
+GENOME_FRAGMENT = /path/to/GRCh38_noalt_as_MboI.bed
+LIGATION_SITE = GATCGATC
 MIN_FRAG_SIZE =
 MAX_FRAG_SIZE =
 MIN_INSERT_SIZE =

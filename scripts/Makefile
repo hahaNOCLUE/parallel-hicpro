@@ -116,15 +116,14 @@ bowtie_combine:  config_check
 	@echo
 
 ## Compute mapping statistics
-## Run in the background: the full-BAM counts are slow and are only consumed
-## by merge_allstat (merge_persample), which runs many hours later. Do not
-## block proc_hic on this step.
+## Keep this target synchronous so make does not start downstream targets
+## before all mapstat files have been completely written.
 mapping_stat:  config_check
 	@echo "--------------------------------------------" 
 	@date 
-	@echo "Mapping statistics for R1 and R2 tags (background) ..." 
+	@echo "Mapping statistics for R1 and R2 tags ..."
 	@mkdir -p $(LOGS_DIR)
-	@nohup $(SCRIPTS)/mapping_stat.sh -c $(CONFIG_FILE) > $(LOGS_DIR)/mapping_stat.nohup.log 2>&1 &
+	@$(SCRIPTS)/mapping_stat.sh -c $(CONFIG_FILE)
 	@echo
 
 mapping_clean: config_check
@@ -203,4 +202,3 @@ ice_norm:
 	@date 
 	@echo "Run ICE Normalization ..." 
 	@$(SCRIPTS)/ice_norm.sh -c $(CONFIG_FILE)
-
