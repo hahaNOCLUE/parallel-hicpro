@@ -2,9 +2,18 @@
 
 ## Scope
 
-The optimized path targets Micro-C data aligned specifically to the GRCh38 no-alt plus hs38d1 decoy analysis set (`GCA_000001405.15_GRCh38_no_alt_plus_hs38d1_analysis_set.fna`; Bowtie2 prefix `GRCh38_noalt_decoy_as`). Other references and restriction-enzyme Hi-C protocols were not validated. ICE normalization is intentionally outside the
-optimized path; create a COOL/MCOOL file and run `cooler balance` only after
-sample-level valid-pair merge and duplicate removal.
+The pipeline has been tested with Micro-C and single-enzyme Hi-C. Multi-enzyme
+Hi-C has not been tested. The primary supported reference is the GRCh38 no-alt
+analysis set (`GCA_000001405.15_GRCh38_no_alt_analysis_set.fna`; Bowtie2 prefix
+`GRCh38_noalt_as`). Reference-specific indexes, chromosome sizes, and digest
+BED files must not be mixed between assemblies.
+
+The detailed equivalence test below predates that primary-reference choice and
+used Micro-C aligned to the GRCh38 no-alt plus hs38d1 decoy analysis set. It
+validates the Rust Micro-C classifier, not the bundled single-enzyme example.
+ICE normalization is intentionally outside the optimized path; create a
+COOL/MCOOL file and run `cooler balance` only after sample-level valid-pair
+merge and duplicate removal.
 
 Technical replicates remain separate through pairing and interaction
 classification. HiC-Pro's `merge_valid_interactions.sh` still performs the
@@ -14,7 +23,7 @@ sample-level merge and removes duplicates across all replicates.
 
 Input:
 
-an internal GRCh38 Micro-C sample (`O33_1`)
+an internal GRCh38 no-alt-plus-hs38d1-decoy Micro-C sample (`O33_1`)
 
 The Rust Micro-C classifier processed 48,412,320 pairs. Its sorted
 `validPairs`, `FiltPairs`, `SinglePairs`, `DumpPairs`, and `RSstat` outputs
@@ -44,6 +53,9 @@ right, so no valid pair is discarded.
 Sharding is optional (`RUST_SHARD_VALIDPAIRS = 0` by default). It is not yet
 used by HiC-Pro's sample-level technical-replicate merge; enabling it currently
 creates auxiliary files in addition to the canonical `validPairs` output.
+The table is specific to `GRCh38_noalt_decoy_as`; do not use it with the
+primary `GRCh38_noalt_as` reference. Set `HICPRO_BREAKPOINTS` explicitly only
+when the table matches the alignment reference.
 
 ## Cooler equivalence
 

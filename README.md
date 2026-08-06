@@ -1,6 +1,6 @@
 # parallel-hicpro
 
-Micro-C-oriented parallel post-alignment processing built on
+Parallel Micro-C and Hi-C processing built on
 [HiC-Pro 3.1.0](https://github.com/nservant/HiC-Pro). The slow Python pairing
 and DNase/Micro-C valid-pair classification stages are replaced with Rust,
 technical replicates retain HiC-Pro's sample-level merge/deduplication
@@ -9,11 +9,22 @@ instead of an ICE-normalized matrix.
 
 ## Primary scope
 
-> **This fork is a focused Micro-C pipeline, not a generally validated replacement for every HiC-Pro protocol or reference.**
+> **Validated protocols: Micro-C and single-enzyme Hi-C. Multi-enzyme Hi-C has not been tested.**
 
-The optimized and validated target is **Micro-C aligned to the GRCh38 no-alt plus hs38d1 decoy analysis set**, specifically the reference distributed as `GCA_000001405.15_GRCh38_no_alt_plus_hs38d1_analysis_set.fna` and used here with the Bowtie2 prefix `GRCh38_noalt_decoy_as`. The supplied centromeric N-run breakpoints, real-data equivalence tests, and default GRCh38 example configuration all refer to this exact reference build.
+The primary target is **GRCh38 no-alt analysis set**, specifically
+`GCA_000001405.15_GRCh38_no_alt_analysis_set.fna`, used here with the Bowtie2
+prefix `GRCh38_noalt_as`. Other assemblies or GRCh38 representations require
+matching Bowtie2 indexes, chromosome sizes, restriction-fragment annotations
+(for Hi-C), and independent output validation.
 
-The Rust Micro-C classifier assumes the no-restriction-fragment HiC-Pro path (`GENOME_FRAGMENT` empty). Other assemblies, alternate GRCh38 references, and restriction-enzyme Hi-C may require new chromosome sizes, breakpoints, configuration, and independent output validation. Do not reuse the bundled breakpoint table on another FASTA.
+Micro-C uses the Rust no-restriction-fragment path (`GENOME_FRAGMENT` empty).
+Single-enzyme Hi-C uses HiC-Pro's restriction-fragment classifier and requires
+a BED file generated for the same FASTA and enzyme. Multi-enzyme digestion is
+supported upstream by HiC-Pro but has not been tested in this fork.
+
+The bundled `GRCh38_noalt_decoy_as` breakpoint table belongs to the distinct
+no-alt-plus-hs38d1-decoy reference. It is optional, is not used by default, and
+must not be used with `GRCh38_noalt_as` or another FASTA.
 
 The original HiC-Pro README is preserved as
 [README_UPSTREAM.md](README_UPSTREAM.md). Please cite HiC-Pro when using this
@@ -50,7 +61,7 @@ cp config-system.example.txt config-system.txt
 Edit `config-system.txt` and replace `/path/to/parallel-hicpro` with the clone
 path. `config-system.txt` is ignored because it is machine-specific.
 
-## Micro-C configuration
+## Configuration
 
 Copy [config-microc-grch38.example.txt](config-microc-grch38.example.txt) and
 set at least:
@@ -60,9 +71,18 @@ set at least:
 - `GENOME_SIZE`
 - read suffixes `PAIR1_EXT` and `PAIR2_EXT`
 
-`GENOME_FRAGMENT` must remain empty for Micro-C. `GENOME_SIZE` controls which
-chromosomes enter the final `.mcool`; alignments to decoys may be retained in
-validPairs while the standard contact map uses primary chromosomes only.
+The example is configured for single-enzyme MboI Hi-C on `GRCh38_noalt_as`.
+Set `GENOME_FRAGMENT` to the matching digest BED and `LIGATION_SITE` to the
+appropriate ligation junction.
+
+For Micro-C, clear both values:
+
+```text
+GENOME_FRAGMENT =
+LIGATION_SITE =
+```
+
+`GENOME_SIZE` controls which chromosomes enter the final `.mcool`.
 
 The default resolutions are:
 

@@ -1,7 +1,9 @@
-# Primary target: Hi-C aligned to the GRCh38 no-alt analysis set.
+# Primary target: single-enzyme Hi-C aligned to the GRCh38 no-alt analysis set.
 # Expected FASTA: GCA_000001405.15_GRCh38_no_alt_analysis_set.fna
 # Expected Bowtie2 prefix: GRCh38_noalt_as
 # Digestion: MboI (GATC)
+# For Micro-C, leave both GENOME_FRAGMENT and LIGATION_SITE empty.
+# Multi-enzyme Hi-C has not been tested in this fork.
 
 TMP_DIR = tmp
 LOGS_DIR = logs
@@ -42,6 +44,7 @@ RM_MULTI = 1
 RM_DUP = 1
 
 USE_RUST = 1
+# Optional and reference-specific. Leave empty for GRCh38_noalt_as.
 HICPRO_BREAKPOINTS =
 RUST_SHARD_VALIDPAIRS = 0
 

@@ -63,9 +63,14 @@ do
             logfile=${ldir}/mapped_2hic_dnase_${prefix}.log
             rust_bin=${HICPRO_MICROC_RUST_BIN:-${SCRIPTS}/hicpro-microc-rs}
             if [[ ${USE_RUST:-1} == 1 && -x ${rust_bin} ]]; then
-                breakpoints=${HICPRO_BREAKPOINTS:-${SCRIPTS}/../annotations/GRCh38_noalt_decoy_as.breakpoints.high_confidence.tsv}
-                rust_opts="--threads ${N_CPU:-1} --breakpoints ${breakpoints}"
+                rust_opts="--threads ${N_CPU:-1}"
+                if [[ -n ${HICPRO_BREAKPOINTS:-} ]]; then
+                    rust_opts="${rust_opts} --breakpoints ${HICPRO_BREAKPOINTS}"
+                fi
                 if [[ ${RUST_SHARD_VALIDPAIRS:-0} == 1 ]]; then
+                    if [[ -z ${HICPRO_BREAKPOINTS:-} ]]; then
+                        die "RUST_SHARD_VALIDPAIRS=1 requires a reference-matched HICPRO_BREAKPOINTS file"
+                    fi
                     rust_opts="${rust_opts} --shard-dir ${datadir}/shards"
                 fi
                 cmd="${rust_bin} ${opts} ${rust_opts} -r ${r} -o ${datadir}"
@@ -90,7 +95,6 @@ do
     ) &
 done
 wait
-
 
 
 
