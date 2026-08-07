@@ -4,6 +4,7 @@ use rayon::prelude::*;
 use rust_htslib::bam;
 use rust_htslib::bam::record::{Aux, Cigar};
 use rust_htslib::bam::{Read, Record};
+use std::cmp::Ordering;
 use std::collections::HashMap;
 use std::fs::{self, File};
 use std::io::{BufRead, BufReader, BufWriter, Write};
@@ -257,6 +258,89 @@ fn normalized_qname(name: &[u8]) -> &[u8] {
     &name[..end]
 }
 
+// Match samtools sort -n closely enough to merge two query-name-sorted BAMs.
+// In particular, compare runs of digits numerically rather than bytewise.
+fn qname_cmp(left: &[u8], right: &[u8]) -> Ordering {
+    let left = normalized_qname(left);
+    let right = normalized_qname(right);
+    let (mut i, mut j) = (0, 0);
+
+    while i < left.len() && j < right.len() {
+        if left[i].is_ascii_digit() && right[j].is_ascii_digit() {
+            let left_start = i;
+            let right_start = j;
+            while i < left.len() && left[i].is_ascii_digit() {
+                i += 1;
+            }
+            while j < right.len() && right[j].is_ascii_digit() {
+                j += 1;
+            }
+
+            let mut left_sig = left_start;
+            let mut right_sig = right_start;
+            while left_sig < i && left[left_sig] == b'0' {
+                left_sig += 1;
+            }
+            while right_sig < j && right[right_sig] == b'0' {
+                right_sig += 1;
+            }
+            let left_len = i - left_sig;
+            let right_len = j - right_sig;
+            match left_len.cmp(&right_len) {
+                Ordering::Equal => {}
+                order => return order,
+            }
+            match left[left_sig..i].cmp(&right[right_sig..j]) {
+                Ordering::Equal => {}
+                order => return order,
+            }
+            // Numerically equal digit runs follow byte ordering as a stable tie-breaker.
+            match left[left_start..i].cmp(&right[right_start..j]) {
+                Ordering::Equal => {}
+                order => return order,
+            }
+        } else {
+            match left[i].cmp(&right[j]) {
+                Ordering::Equal => {
+                    i += 1;
+                    j += 1;
+                }
+                order => return order,
+            }
+        }
+    }
+    (left.len() - i).cmp(&(right.len() - j))
+}
+
+fn missing_mate(qname: &[u8]) -> Record {
+    let mut record = Record::new();
+    record.set(qname, None, &[], &[]);
+    record.set_flags(0x4);
+    record.set_tid(-1);
+    record.set_pos(-1);
+    record.set_mapq(0);
+    record
+}
+
+#[cfg(test)]
+mod pair_tests {
+    use super::*;
+
+    #[test]
+    fn query_names_use_natural_numeric_order() {
+        assert_eq!(qname_cmp(b"read2", b"read10"), Ordering::Less);
+        assert_eq!(qname_cmp(b"read10", b"read2"), Ordering::Greater);
+        assert_eq!(qname_cmp(b"read2/1", b"read2/2"), Ordering::Equal);
+    }
+
+    #[test]
+    fn missing_mates_are_unmapped_and_keep_the_name() {
+        let record = missing_mate(b"read42");
+        assert_eq!(record.qname(), b"read42");
+        assert!(record.is_unmapped());
+    }
+}
+
 fn aux_integer(record: &Record, tag: &[u8; 2]) -> Option<i64> {
     match record.aux(tag).ok()? {
         Aux::I8(v) => Some(v as i64),
@@ -425,15 +509,52 @@ fn run_pair(args: PairArgs) -> Result<()> {
 
     let mut it1 = r1_reader.records().fuse();
     let mut it2 = r2_reader.records().fuse();
+    let mut next1: Option<Record> = None;
+    let mut next2: Option<Record> = None;
+    let mut done1 = false;
+    let mut done2 = false;
     let mut stats = PairStats::default();
 
     loop {
         let mut batch = Vec::with_capacity(args.parallel.batch_size);
-        for _ in 0..args.parallel.batch_size {
-            match (it1.next(), it2.next()) {
-                (None, None) => break,
-                (Some(a), Some(b)) => batch.push((a?, b?)),
-                _ => bail!("R1 and R2 BAM files contain different record counts"),
+        while batch.len() < args.parallel.batch_size {
+            if next1.is_none() && !done1 {
+                match it1.next() {
+                    Some(record) => next1 = Some(record?),
+                    None => done1 = true,
+                }
+            }
+            if next2.is_none() && !done2 {
+                match it2.next() {
+                    Some(record) => next2 = Some(record?),
+                    None => done2 = true,
+                }
+            }
+
+            match (next1.as_ref(), next2.as_ref()) {
+                (Some(r1), Some(r2)) => match qname_cmp(r1.qname(), r2.qname()) {
+                    Ordering::Equal => batch.push((next1.take().unwrap(), next2.take().unwrap())),
+                    Ordering::Less => {
+                        let r1 = next1.take().unwrap();
+                        let r2 = missing_mate(r1.qname());
+                        batch.push((r1, r2));
+                    }
+                    Ordering::Greater => {
+                        let r2 = next2.take().unwrap();
+                        batch.push((missing_mate(r2.qname()), r2));
+                    }
+                },
+                (Some(_), None) if done2 => {
+                    let r1 = next1.take().unwrap();
+                    let r2 = missing_mate(r1.qname());
+                    batch.push((r1, r2));
+                }
+                (None, Some(_)) if done1 => {
+                    let r2 = next2.take().unwrap();
+                    batch.push((missing_mate(r2.qname()), r2));
+                }
+                (None, None) if done1 && done2 => break,
+                _ => continue,
             }
         }
         if batch.is_empty() {
